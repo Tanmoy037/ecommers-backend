@@ -1,34 +1,78 @@
-package db
+package main
 
 import (
-	"os"
+	"fmt"
+	"log"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/gofiber/fiber"
-	"github.com/joho/godotenv"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
 
-func init() {
-	// Load environment variables from .env file
-	if err := godotenv.Load(); err != nil {
-		panic("Error loading .env file")
-	}
-}
-func DatabaseConnection() {
-	app := fiber.New()
+func main() {
+	tableName := "users"
 
-	awsConfig := &aws.Config{
-		Region: aws.String(os.Getenv("AWS_REGION")),
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+
+	svc := dynamodb.New(sess)
+
+	input := &dynamodb.CreateTableInput{
+		AttributeDefinitions: []*dynamodb.AttributeDefinition{
+			{
+				AttributeName: aws.String("Id"),
+				AttributeType: aws.String("N"),
+			},
+			{
+				AttributeName: aws.String("Email"),
+				AttributeType: aws.String("S"),
+			},
+			{
+				AttributeName: aws.String("Name"),
+				AttributeType: aws.String("S"),
+			},
+		},
+		KeySchema: []*dynamodb.KeySchemaElement{
+			{
+				AttributeName: aws.String("Email"),
+				KeyType:       aws.String("HASH"),
+			},
+			{
+				AttributeName: aws.String("Id"),
+				KeyType:       aws.String("RANGE"),
+			},
+		},
+		LocalSecondaryIndexes: []*dynamodb.LocalSecondaryIndex{
+			{
+				IndexName: aws.String("index_Id_Name"),
+				KeySchema: []*dynamodb.KeySchemaElement{
+					{
+						AttributeName: aws.String("Email"),
+						KeyType:       aws.String("HASH"),
+					},
+					{
+						AttributeName: aws.String("Name"),
+						KeyType:       aws.String("RANGE"),
+					},
+				},
+				Projection: &dynamodb.Projection{
+					ProjectionType: aws.String("ALL"),
+				},
+			},
+		},
+		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
+			ReadCapacityUnits:  aws.Int64(10),
+			WriteCapacityUnits: aws.Int64(10),
+		},
+		TableName: aws.String(tableName),
 	}
 
-	sees, err := session.NewSession(awsConfig)
+	_, err := svc.CreateTable(input)
+
 	if err != nil {
-		panic(err)
+		log.Fatalf("Got error calling CreateTable: %s", err)
 	}
-	db := dynamodb.New(sees)
 
-	app.Listen(":3000")
-
+	fmt.Println("Created the table", tableName)
 }
