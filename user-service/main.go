@@ -9,5 +9,6 @@ func main() {
 	fmt.Println("Welcome to user service")
 
 	db.CreateTable()
+	db.ListTables()
 
 }
