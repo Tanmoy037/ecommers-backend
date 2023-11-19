@@ -1,4 +1,4 @@
-package main
+package db
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
 
-func main() {
+func CreateTable() {
 	tableName := "users"
 
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
@@ -45,7 +45,7 @@ func main() {
 		},
 		LocalSecondaryIndexes: []*dynamodb.LocalSecondaryIndex{
 			{
-				IndexName: aws.String("index_Id_Name"),
+				IndexName: aws.String("index_Email_Name"),
 				KeySchema: []*dynamodb.KeySchemaElement{
 					{
 						AttributeName: aws.String("Email"),
